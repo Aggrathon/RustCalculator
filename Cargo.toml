@@ -1,0 +1,10 @@
+[package]
+name = "RustCalc"
+version = "0.1.0"
+authors = ["Aggrathon <antonbjo@gmail.com>"]
+
+[dependencies]
+
+[[bin]]
+name = "RustCalc"
+path = "main.rs"

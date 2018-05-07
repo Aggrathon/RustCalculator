@@ -1,4 +1,3 @@
-use std;
 
 use scanner::Token;
 use scanner::Scanner;
@@ -17,6 +16,7 @@ Term
 Term'
 	* Factor Term'
 	/ Factor Term'
+	f/^/!/(/n=>Factor Term __________TODO__________
 	empty
 Factor
 	Func Factor'
@@ -40,7 +40,6 @@ fn print_error(scanner: &mut Scanner, error:String) -> f64 {
 	eprintln!("Syntax Error ({})", error);
 	scanner.print_pos();
 	panic!();
-	std::f64::EPSILON
 }
 
 fn expect(scanner: &mut Scanner, t2: Token) {
@@ -100,8 +99,8 @@ fn term_(scanner: &mut Scanner, v: f64) -> f64 {
 			scanner.next();
 			let v = v / factor(scanner);
 			term_(scanner, v)
-		}
-		_ => v
+		},
+		_ => v,
 	}
 }
 
@@ -119,9 +118,14 @@ fn factor_(scanner: &mut Scanner, v: f64) -> f64 {
 		},
 		Token::Factorial => {
 			scanner.next();
-			eprintln!("Factorial is not implemented");
-			factor_(scanner, v)
-		},
+			let mut r: f64 = 1.0;
+			let mut v: f64 = v.floor();
+			while v > 1.0 {
+				r *= v;
+				v -= 1.0;
+			}
+			factor_(scanner, r)
+		}
 		_ => v
 	}
 }

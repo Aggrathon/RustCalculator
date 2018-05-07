@@ -45,7 +45,7 @@ fn random() {
 }
 
 fn close(a:f64, b:f64) -> bool {
-	f64::abs(a-b) < a * 0.0001
+	f64::abs(a-b) < a.abs() * 0.0001
 }
 
 fn unwrap(t: &Token) -> f64 {

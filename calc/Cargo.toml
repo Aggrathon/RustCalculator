@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Aggrathon <antonbjo@gmail.com>"]
 
 [dependencies]
+natural_constants = "0.1.0"
+rand = "0.4.2"

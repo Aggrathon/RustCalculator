@@ -29,18 +29,23 @@ fn function() {
 
 #[test]
 fn random() {
-	let mut sc = Scanner::new(String::from("rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd"));
+	let num = 20;
+	let string: String = std::iter::repeat(" rnd ").take(num).collect();
+	let mut sc = Scanner::new(String::from(string));
+	let mut ctr = 0;
 	loop {
 		match *sc.next() {
 			Token::Number(x) => { assert!(x < 1.0); assert!(x >= 0.0); },
 			Token::END => break,
 			_ => panic!("Invalid token"),
 		}
+		ctr += 1;
 	}
+	assert_eq!(ctr, num);
 }
 
 fn close(a:f64, b:f64) -> bool {
-	f64::abs(a-b) < a * 0.001
+	f64::abs(a-b) < a * 0.0001
 }
 
 fn unwrap(t: &Token) -> f64 {
@@ -52,10 +57,12 @@ fn unwrap(t: &Token) -> f64 {
 
 #[test]
 fn value() {
-	let mut sc = Scanner::new(String::from("1 pi 2E2"));
+	let mut sc = Scanner::new(String::from("1 pi 2E2 1.1 1.2"));
 	assert!(close(unwrap(sc.next()), 1.0));
 	assert!(close(unwrap(sc.next()), std::f64::consts::PI));
 	assert!(close(unwrap(sc.next()), 200.0));
+	assert!(close(unwrap(sc.next()), 1.1));
+	assert!(!close(unwrap(sc.next()), 1.1));
 }
 
 #[test]

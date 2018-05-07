@@ -160,7 +160,8 @@ impl Scanner {
 				}
 			},
 			_ => {
-				let mut s = oc.to_string();
+				let mut s = String::with_capacity(8);
+				s.push(oc);
 				if oc.is_numeric() || oc == '.' {
 					loop {
 						match self.iterator.peek() {

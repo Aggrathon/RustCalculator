@@ -4,8 +4,7 @@ extern crate rand;
 use std;
 use self::natural_constants::physics;
 
-#[derive(PartialEq)]
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Token {
 	Addition,
 	Subtraction,
@@ -44,8 +43,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(PartialEq)]
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Function {
 	Log,
 	Ln,
@@ -98,10 +96,11 @@ impl Scanner {
 
 	#[allow(dead_code)]
 	pub fn print_pos(&self) {
+		let i = if self.index_current > 0 { self.index_current-1 } else { 0 };
 		println!("{}", self.token_current);
 		println!("Position: {}", self.index_current);
 		println!("{}", self.string);
-		println!("{:1$}^", "", self.index_current-1);
+		println!("{:1$}^", "", i);
 	}
 
 	pub fn next(&mut self) -> &Token {

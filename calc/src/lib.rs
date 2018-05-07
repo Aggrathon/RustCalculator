@@ -1,11 +1,13 @@
 
 pub mod scanner;
+pub mod parser;
 use scanner::Scanner;
 
-pub fn calculate(input: String) {
+pub fn calculate(input: String) -> f64 {
 	let mut scanner = Scanner::new(input);
-	while !scanner.has_ended() {
-		scanner.next();
-		scanner.print_pos();
-	}
+	parser::parse(&mut scanner)
+}
+
+pub fn calculate_print(input: String) {
+	println!("{}", calculate(input));
 }

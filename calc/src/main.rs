@@ -4,7 +4,7 @@ use std::env;
 
 fn main() {
 	let combine: String = combine_args();
-    calc::calculate(combine);
+    calc::calculate_print(combine);
 }
 
 fn combine_args() -> (String) {

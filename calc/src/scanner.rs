@@ -5,6 +5,7 @@ use std;
 use self::natural_constants::physics;
 
 #[derive(PartialEq)]
+#[derive(Debug)]
 pub enum Token {
 	Addition,
 	Subtraction,
@@ -44,6 +45,7 @@ impl std::fmt::Display for Token {
 }
 
 #[derive(PartialEq)]
+#[derive(Debug)]
 pub enum Function {
 	Log,
 	Ln,
@@ -71,45 +73,63 @@ impl std::fmt::Display for Function {
 pub struct Scanner {
 	string: String,
 	iterator: std::iter::Peekable<std::str::Chars<'static>>,
-	index: usize,
-	token: Token,
+	index_current: usize,
+	index_next: usize,
+	token_current: Token,
+	token_next: Token,
 }
 
 impl Scanner {
 
-	pub fn from(string:String) -> Scanner {
+	pub fn new(string:String) -> Scanner {
 		//This unsafe storage of the char iterator requires that the string is never changed
 		let iter = unsafe { std::mem::transmute(string.chars().peekable()) };
-		Scanner{string: string, iterator: iter, index: 0, token: Token::Unknown}
+		let mut sc = Scanner {
+			string: string,
+			iterator: iter,
+			index_current: 0,
+			index_next: 0,
+			token_current: Token::Unknown,
+			token_next: Token::Unknown
+		};
+		sc.next();
+		sc
 	}
 
 	#[allow(dead_code)]
 	pub fn print_pos(&self) {
-		println!("{}", self.token);
-		println!("Position: {}", self.index);
+		println!("{}", self.token_current);
+		println!("Position: {}", self.index_current);
 		println!("{}", self.string);
-		println!("{:1$}^", "", self.index-1);
+		println!("{:1$}^", "", self.index_current-1);
 	}
 
 	pub fn next(&mut self) -> &Token {
-		self.token = self.get_next_token();
-		&self.token
+		self.index_current = self.index_next;
+		std::mem::swap(&mut self.token_current, &mut self.token_next);
+		self.token_next = self.get_next_token();
+		&self.token_current
 	}
 
 	#[allow(dead_code)]
 	pub fn current(&self) -> &Token {
-		&self.token
+		&self.token_current
+	}
+
+	#[allow(dead_code)]
+	pub fn peek(&self) -> &Token {
+		&self.token_next
 	}
 
 	pub fn has_ended(&self) -> bool {
-		match self.token {
+		match self.token_current {
 			Token::END => true,
 			_ => false,
 		}
 	}
 
 	fn get_next_token(&mut self) -> Token {
-		self.index+= 1;
+		self.index_next += 1;
 		let oc = match self.iterator.next() {
 			Option::None => return Token::END,
 			Option::Some(c) => c,
@@ -133,7 +153,7 @@ impl Scanner {
 				match od {
 					'*' => {
 						self.iterator.next();
-						self.index+= 1;
+						self.index_next += 1;
 						Token::Power
 					},
 					_ => Token::Multiplication
@@ -152,7 +172,7 @@ impl Scanner {
 							},
 						};
 						self.iterator.next();
-						self.index+= 1;
+						self.index_next += 1;
 					}
 					match s.parse::<f64>() {
 						Result::Ok(n) => Token::Number(n),
@@ -170,7 +190,7 @@ impl Scanner {
 							},
 						};
 						self.iterator.next();
-						self.index+= 1;
+						self.index_next += 1;
 					}
 					Scanner::parse_text(s)
 				}

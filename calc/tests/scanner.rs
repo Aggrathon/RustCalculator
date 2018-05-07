@@ -1,0 +1,112 @@
+extern crate calc;
+
+use calc::scanner::*;
+
+#[test]
+fn multiplication() {
+	let mut sc = Scanner::new(String::from(" * "));
+	assert_eq!(*sc.next(), Token::Multiplication);
+	assert_eq!(*sc.next(), Token::END);
+}
+
+#[test]
+fn string() {
+	let mut sc = Scanner::new(String::from(" asd gfd "));
+	assert_eq!(*sc.next(), Token::Text("asd".to_string()));
+	assert_ne!(*sc.next(), Token::Text("gfad".to_string()));
+	assert_eq!(*sc.next(), Token::END);
+}
+
+#[test]
+fn function() {
+	let mut sc = Scanner::new(String::from(" sin cos ln abs "));
+	assert_eq!(*sc.next(), Token::Function(Function::Sin));
+	assert_eq!(*sc.next(), Token::Function(Function::Cos));
+	assert_ne!(*sc.next(), Token::Function(Function::Log));
+	assert_eq!(*sc.next(), Token::Function(Function::Abs));
+	assert_eq!(*sc.next(), Token::END);
+}
+
+#[test]
+fn random() {
+	let mut sc = Scanner::new(String::from("rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd rnd"));
+	loop {
+		match *sc.next() {
+			Token::Number(x) => { assert!(x < 1.0); assert!(x >= 0.0); },
+			Token::END => break,
+			_ => panic!("Invalid token"),
+		}
+	}
+}
+
+fn close(a:f64, b:f64) -> bool {
+	f64::abs(a-b) < a * 0.001
+}
+
+fn unwrap(t: &Token) -> f64 {
+	match *t {
+		Token::Number(x) => x,
+		_ => panic!("Token is not a number ({})", t),
+	}
+}
+
+#[test]
+fn value() {
+	let mut sc = Scanner::new(String::from("1 pi 2E2"));
+	assert!(close(unwrap(sc.next()), 1.0));
+	assert!(close(unwrap(sc.next()), std::f64::consts::PI));
+	assert!(close(unwrap(sc.next()), 200.0));
+}
+
+#[test]
+fn mix() {
+	let mut sc = Scanner::new(String::from("1pi(asd!"));
+	assert!(close(unwrap(sc.next()), 1.0));
+	assert!(close(unwrap(sc.next()), std::f64::consts::PI));
+	assert_eq!(*sc.next(), Token::Lparen);
+	assert_eq!(*sc.next(), Token::Text("asd".to_string()));
+	assert_eq!(*sc.next(), Token::Factorial);
+	assert_eq!(*sc.next(), Token::END);
+}
+
+#[test]
+fn peek() {
+	let mut sc = Scanner::new(String::from("1pi(asd!"));
+	assert!(close(unwrap(sc.next()), 1.0));
+	assert!(close(unwrap(sc.peek()), std::f64::consts::PI));
+	assert!(close(unwrap(sc.next()), std::f64::consts::PI));
+	assert_eq!(*sc.peek(), Token::Lparen);
+	assert_eq!(*sc.next(), Token::Lparen);
+	assert_eq!(*sc.peek(), Token::Text("asd".to_string()));
+	assert_eq!(*sc.next(), Token::Text("asd".to_string()));
+	assert_eq!(*sc.peek(), Token::Factorial);
+	assert_eq!(*sc.next(), Token::Factorial);
+	assert_eq!(*sc.peek(), Token::END);
+	assert_eq!(*sc.next(), Token::END);
+}
+
+#[test]
+fn current() {
+	let mut sc = Scanner::new(String::from("1pi(asd!"));
+	assert!(close(unwrap(sc.next()), 1.0));
+	assert!(close(unwrap(sc.current()), 1.0));
+	assert!(close(unwrap(sc.next()), std::f64::consts::PI));
+	assert!(close(unwrap(sc.current()), std::f64::consts::PI));
+	assert_eq!(*sc.peek(), Token::Lparen);
+	assert_eq!(*sc.next(), Token::Lparen);
+	assert_eq!(*sc.current(), Token::Lparen);
+	assert_eq!(*sc.peek(), Token::Text("asd".to_string()));
+	assert_eq!(*sc.next(), Token::Text("asd".to_string()));
+	assert_eq!(*sc.current(), Token::Text("asd".to_string()));
+}
+
+#[test]
+fn end() {
+	let mut sc = Scanner::new(String::from(""));
+	assert_eq!(*sc.peek(), Token::END);
+	assert_eq!(*sc.next(), Token::END);
+	assert_eq!(*sc.current(), Token::END);
+	assert_eq!(*sc.peek(), Token::END);
+	assert_eq!(*sc.next(), Token::END);
+	assert_eq!(*sc.current(), Token::END);
+}

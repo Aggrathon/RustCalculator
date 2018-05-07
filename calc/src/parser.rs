@@ -129,12 +129,29 @@ fn factor_(scanner: &mut Scanner, v: f64) -> f64 {
 fn func(scanner: &mut Scanner) -> f64 {
 	match scanner.peek().clone() {
 		Token::Function(ref f) =>  {
-			/*let t = scanner.next();
-			match f {
-				Function::Ln => std::f64::ln(v)
+			scanner.next();
+			match *f {
+				Function::Log => {
+					expect(scanner, Token::Lparen);
+					let v1 = expr(scanner);
+					expect(scanner, Token::Comma);
+					let v2 = expr(scanner);
+					expect(scanner, Token::Rparen);
+					v1.log(v2)
+				},
+				_ => {
+					let v = func(scanner);
+					match *f {
+						Function::Ln => v.ln(),
+						Function::Abs => v.abs(),
+						Function::Sqrt => v.sqrt(),
+						Function::Cos => v.cos(),
+						Function::Sin => v.sin(),
+						Function::Tan => v.tan(),
+						_ => print_error(scanner, String::from("Too few function arguments")),
+					}
+				}
 			}
-			term_(&mut scanner, v * factor(&mut scanner))*/
-			0.0
 		},
 		_ => value(scanner)
 	}

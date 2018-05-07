@@ -39,3 +39,12 @@ fn comp_1() {
 	test("((((5+2))*3)+((((((7)))*4))))", 49.0);
 	test("log((cos 3 - 5 +7*25), 2*e-e)-ln((cos 3 - 5 +7*25))", 0.0)
 }
+
+#[test]
+fn no_mul() {
+	test("2pi-2*pi", 0.0);
+	test("2cos pi", -2.0);
+	test("2(pi)-2*pi", 0.0);
+	test("e pi-e*pi", 0.0);
+	test("2 -5", -3.0);
+}

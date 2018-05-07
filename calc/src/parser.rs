@@ -16,7 +16,7 @@ Term
 Term'
 	* Factor Term'
 	/ Factor Term'
-	f/^/!/(/n=>Factor Term __________TODO__________
+	f/(/n=>Factor Term
 	empty
 Factor
 	Func Factor'
@@ -100,6 +100,10 @@ fn term_(scanner: &mut Scanner, v: f64) -> f64 {
 			let v = v / factor(scanner);
 			term_(scanner, v)
 		},
+		Token::Function(_) | Token::Lparen | Token::Number(_) => {
+			let v = v * factor(scanner);
+			term_(scanner, v)
+		}
 		_ => v,
 	}
 }

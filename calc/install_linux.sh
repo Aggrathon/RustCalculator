@@ -5,3 +5,4 @@ cargo build --release
 echo "Installing the executable to /usr/local/bin/calc:"
 sudo rm -f /usr/local/bin/calc
 sudo cp target/release/calc /usr/local/bin/calc
+echo "Done!"

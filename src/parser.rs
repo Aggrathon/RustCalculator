@@ -35,9 +35,9 @@ Value
 */
 
 
-fn print_error(scanner: &mut Scanner, error:String) -> f64 {
+fn print_error<S: Into<String>>(scanner: &mut Scanner, error:S) -> f64 {
 	scanner.next();
-	eprintln!("Syntax Error ({})", error);
+	eprintln!("Syntax Error ({})", error.into());
 	scanner.print_pos();
 	panic!();
 }
@@ -48,6 +48,15 @@ fn expect(scanner: &mut Scanner, t2: Token) {
 	}
 	else {
 		print_error(scanner, format!("Expected {}", t2));
+	}
+}
+
+fn expect_str<S: Into<String>>(scanner: &mut Scanner, t2: Token, reason: S) {
+	if *scanner.peek() == t2 {
+		scanner.next();
+	}
+	else {
+		print_error(scanner, reason);
 	}
 }
 
@@ -140,11 +149,11 @@ fn func(scanner: &mut Scanner) -> f64 {
 			scanner.next();
 			match *f {
 				Function::Log => {
-					expect(scanner, Token::Lparen);
+					expect_str(scanner, Token::Lparen, "Syntax: log(x,y)");
 					let v1 = expr(scanner);
-					expect(scanner, Token::Comma);
+					expect_str(scanner, Token::Comma, "Syntax: log(x,y)");
 					let v2 = expr(scanner);
-					expect(scanner, Token::Rparen);
+					expect_str(scanner, Token::Rparen, "Syntax: log(x,y)");
 					v1.log(v2)
 				},
 				_ => {

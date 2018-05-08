@@ -24,4 +24,5 @@ fn print_help() {
 	println!("Try running it with something to calculate!");
 	println!("Example:    {} 2 + 2 - cos pi", exe);
 	println!("");
+	println!("For more information see: https://github.com/Aggrathon/RustCalculator");
 }

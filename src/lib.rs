@@ -1,21 +1,40 @@
 
 pub mod scanner;
 pub mod parser;
-use scanner::Scanner;
 
-pub fn calculate(input: String) -> f64 {
-	let mut scanner = Scanner::new(input);
-	parser::parse(&mut scanner)
+use parser::Parser;
+use parser::ParseResult;
+
+pub fn calculate_single(input: String) -> f64 {
+	let mut parser = Parser::new(input);
+	match *parser.parse() {
+		ParseResult::Value(v) => v,
+		ParseResult::Pair(_, v) => v,
+		_ => 0.0,
+	}
+
 }
 
 pub fn calculate_print(input: String) {
-	let handler = std::panic::take_hook();
-	std::panic::set_hook(Box::new(|_info| {} ));
-	let res = std::panic::catch_unwind(|| { 
-		println!("{}", calculate(input));
-	});
-	if res.is_err() {
-		println!("Could not calculate");
+	let mut p = Parser::new(input);
+	loop {
+		match p.parse() {
+			ParseResult::Error(s) => {
+				println!("{}", s);
+				break;
+			},
+			ParseResult::Value(v) => {
+				println!("{}", v);
+			}
+			ParseResult::Pair(k, v) => {
+				println!("{} = {}", k ,v);
+			},
+			ParseResult::Parsing => {
+				println!("Still Parsing");
+			},
+			ParseResult::Ended => {
+				break;
+			}
+		}
 	}
-	std::panic::set_hook(handler);
 }

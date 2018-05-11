@@ -1,10 +1,13 @@
 extern crate calc;
 
-use calc::scanner::*;
 use calc::parser::*;
 
 fn test(string: &str, value: f64) {
-	let v = parse(&mut Scanner::new(String::from(string)));
+	let v = match *Parser::new(string).parse() {
+		ParseResult::Value(v) => v,
+		ParseResult::Pair(_, v) => v,
+		_ => panic!(),
+	};
 	assert!((value-v).abs() < 0.000001, "{}: {} != {}", string, v, value);
 }
 

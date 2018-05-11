@@ -94,13 +94,9 @@ impl Scanner {
 		sc
 	}
 
-	#[allow(dead_code)]
-	pub fn print_pos(&self) {
+	pub fn print_pos(&self) -> String {
 		let i = if self.index_current > 0 { self.index_current-1 } else { 0 };
-		println!("{}", self.token_current);
-		println!("Position: {}", self.index_current);
-		println!("{}", self.string);
-		println!("{:1$}^", "", i);
+		format!("{}\nPosition: {}\n{}\n{:4$}^", self.token_current, self.index_current, self.string, "", i)
 	}
 
 	pub fn next(&mut self) -> &Token {

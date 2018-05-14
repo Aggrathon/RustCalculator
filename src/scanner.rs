@@ -56,6 +56,10 @@ pub enum Function {
 	Sin,
 	Tan,
 	Sqrt,
+	Acos,
+	Asin,
+	Atan,
+	Atan2,
 }
 
 impl std::fmt::Display for Function {
@@ -68,6 +72,10 @@ impl std::fmt::Display for Function {
 			Function::Sin => write!(f, "sin"),
 			Function::Tan => write!(f, "tan"),
 			Function::Sqrt => write!(f, "sqrt"),
+			Function::Asin => write!(f, "asin"),
+			Function::Acos => write!(f, "acos"),
+			Function::Atan => write!(f, "atan"),
+			Function::Atan2 => write!(f, "atan2"),
 		}
 	}
 }
@@ -224,6 +232,14 @@ impl Scanner {
 			"tan" => Token::Function(Function::Tan),
 			"abs" => Token::Function(Function::Abs),
 			"sqrt" => Token::Function(Function::Sqrt),
+			"asin" => Token::Function(Function::Asin),
+			"acos" => Token::Function(Function::Acos),
+			"atan" => Token::Function(Function::Atan),
+			"atan2" => Token::Function(Function::Atan2),
+			"arcsin" => Token::Function(Function::Asin),
+			"arccos" => Token::Function(Function::Acos),
+			"arctan" => Token::Function(Function::Atan),
+			"arctan2" => Token::Function(Function::Atan2),
 			//Unknown
 			_ => Token::Text(s),
 		}

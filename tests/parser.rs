@@ -14,7 +14,7 @@ fn test(string: &str, value: f64) {
 	assert!((value-v).abs() < 0.000001, "{}: {} != {}", string, v, value);
 }
 
-fn test2(string: &str, values: &[f64]) {
+fn test_multiple(string: &str, values: &[f64]) {
 	let mut p = Parser::new(string);
 	for v in values {
 		let v2 = match p.parse() {
@@ -25,6 +25,17 @@ fn test2(string: &str, values: &[f64]) {
 			ParseResult::Parsing => panic!("Incomplete evaluation"),
 		};
 		assert!((v-v2).abs() < 0.000001, "{}: {} != {}", string, v2, v);
+	}
+}
+
+fn test_fail(string: &str) {
+	let mut p = Parser::new(string);
+	match p.parse() {
+		ParseResult::Value(v) => panic!("Should not return a valid answer ({} != {})", string, v),
+		ParseResult::Pair(_, v) => panic!("Should not return a valid answer ({} != {})", string, v),
+		ParseResult::Error(_) => return,
+		ParseResult::Ended => return,
+		ParseResult::Parsing => return,
 	}
 }
 
@@ -50,6 +61,19 @@ fn func() {
 	test("abs -10", 10.0);
 	test("ln 2 - log(2,e)", 0.0);
 	test("sqrt2 - sqrt 2", 0.0);
+	test("atan 5", 1.373400766945016);
+	test("asin 1", 1.5707963267948966);
+	test("acos 1", 0.0);
+	test("atan2(2,3)", 0.5880026035475675);
+}
+
+#[test]
+fn func_fail() {
+	test_fail("ln(2,e) - log(2)");
+	test_fail("sqrt(-1)");
+	test_fail("asin 10");
+	test_fail("acos 10");
+	test_fail("atan2 3");
 }
 
 #[test]
@@ -76,9 +100,9 @@ fn no_mul() {
 fn multiple() {
 	test("x = 5, x*x/5", 5.0);
 	test("5*5/5", 5.0);
-	test2("x = 5, x*x/5", &[5.0, 5.0]);
-	test2("(5 + 5 + 5)/3, sqrt(5*5)", &[5.0, 5.0]);
-	test2("x = 5, x*x/5", &[5.0, 5.0]);
-	test2("x = 5, y = x*x/5", &[5.0, 5.0]);
-	test2("x = 5, y = x*x/5, 5, 5, x*5 / y", &[5.0, 5.0, 5.0, 5.0, 5.0]);
+	test_multiple("x = 5, x*x/5", &[5.0, 5.0]);
+	test_multiple("(5 + 5 + 5)/3, sqrt(5*5)", &[5.0, 5.0]);
+	test_multiple("x = 5, x*x/5", &[5.0, 5.0]);
+	test_multiple("x = 5, y = x*x/5", &[5.0, 5.0]);
+	test_multiple("x = 5, y = x*x/5, 5, 5, x*5 / y", &[5.0, 5.0, 5.0, 5.0, 5.0]);
 }

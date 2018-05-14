@@ -235,15 +235,35 @@ impl Parser {
 						self.expect(Token::Rparen, "Syntax: log(x,y)");
 						v1.log(v2)
 					},
+					Function::Atan2 => {
+						self.expect(Token::Lparen, "Syntax: atan2(y,x)");
+						let v1 = self.expr();
+						self.expect(Token::Comma, "Syntax: atan2(y,x)");
+						let v2 = self.expr();
+						self.expect(Token::Rparen, "Syntax: atan2(y,x)");
+						v1.atan2(v2)
+					}
 					_ => {
 						let v = self.func();
 						match *f {
 							Function::Ln => v.ln(),
 							Function::Abs => v.abs(),
-							Function::Sqrt => v.sqrt(),
+							Function::Sqrt => {
+								if v < 0.0 { self.error(format!("Cannot handle negative values ({})", v)); v }
+								else { v.sqrt() }
+							},
 							Function::Cos => v.cos(),
 							Function::Sin => v.sin(),
 							Function::Tan => v.tan(),
+							Function::Asin => {
+								if v <= 1.0 && v >= -1.0 { v.asin() }
+								else { self.error(format!("Value outside range (-1 <= {} <= 1)", v)); v}
+							},
+							Function::Acos => {
+								if v <= 1.0 && v >= -1.0 { v.acos() }
+								else { self.error(format!("Value outside range (-1 <= {} <= 1)", v)); v}
+							},
+							Function::Atan => v.atan(),
 							_ => { self.error(String::from("Unknown function")); v},
 						}
 					}

@@ -1,4 +1,6 @@
 
+use std;
+
 use scanner::Token;
 use scanner::Scanner;
 use scanner::Function;
@@ -7,6 +9,7 @@ use scanner::Function;
 ___Pattern table___
 Expr
 	Term Expr'
+	, Expr
 Expr'
 	+ Term Expr'
 	- Term Expr'
@@ -32,6 +35,10 @@ Value
 	( Expression )
 	- Number
 	Number
+	Id
+Id
+	Text
+	Text = Expr
 */
 
 pub enum ParseResult {
@@ -45,15 +52,24 @@ pub enum ParseResult {
 pub struct Parser {
 	scanner: Scanner,
 	result: ParseResult,
+	lexiographic_table: std::collections::HashMap<String, f64>,
 }
 
 impl Parser {
 	pub fn new<S: Into<String>>(input: S) -> Parser {
-		Parser { scanner: Scanner::new(input.into()), result: ParseResult::Parsing }
+		Parser { 
+			scanner: Scanner::new(input.into()),
+			result: ParseResult::Parsing,
+			lexiographic_table: std::collections::HashMap::new(),
+		}
 	}
 
 	pub fn from(input: Scanner) -> Parser {
-		Parser { scanner: input, result: ParseResult::Parsing }
+		Parser {
+			scanner: input,
+			result: ParseResult::Parsing,
+			lexiographic_table: std::collections::HashMap::new(),
+		}
 	}
 
 	pub fn parse(self: &mut Parser) -> &ParseResult {
@@ -67,14 +83,24 @@ impl Parser {
 				self.result = ParseResult::Parsing;
 				let v = self.expr();
 				match self.result {
-					ParseResult::Error(_) => {},
+					ParseResult::Error(_) | ParseResult::Value(_) | ParseResult::Pair(_,_) => {},
 					_ => match self.scanner.peek().clone() {
-						Token::END => self.result = ParseResult::Value(v),
-						_ => self.error(String::from("Unexpected symbol")),
+						Token::END | Token::Comma => self.result = ParseResult::Value(v),
+						_ => self.error("Unexpected symbol"),
 					},
 				};
 			}
 		};
+		&self.result
+	}
+
+	pub fn parse_all(self: &mut Parser) -> &ParseResult {
+		loop {
+			match self.parse() {
+				ParseResult::Ended | ParseResult::Error(_) => break,
+				_ => {},
+			};
+		}
 		&self.result
 	}
 
@@ -102,8 +128,24 @@ impl Parser {
 	}
 
 	fn expr(self: &mut Parser) -> f64 {
-		let v = self.term();
-		self.expr_(v)
+		match self.scanner.peek().clone() {
+			Token::Text(_) => {
+				let v = self.term();
+				match self.result {
+					ParseResult::Error(_) => v,
+					ParseResult::Pair(_, v2) => {
+						if v == v2 { v }
+						else { self.error("Syntax: id = expression"); v }
+					},
+					_ => self.expr_(v),
+				}
+			},
+			Token::Comma => { self.scanner.next(); self.expr() },
+			_ => {
+				let v = self.term();
+				self.expr_(v)
+			},
+		}
 	}
 
 	fn expr_(self: &mut Parser, v: f64) -> f64 {
@@ -145,7 +187,7 @@ impl Parser {
 					self.term_(v/v2)
 				}
 			},
-			Token::Function(_) | Token::Lparen | Token::Number(_) => {
+			Token::Function(_) | Token::Lparen | Token::Number(_) | Token::Text(_) => {
 				let v = v * self.factor();
 				self.term_(v)
 			}
@@ -220,7 +262,36 @@ impl Parser {
 				self.expect(Token::Rparen, "Expected Right Parenthesis");
 				v
 			},
-			_ => { self.error(String::from("Expected a number or parenthesis")); 0.0},
+			Token::Text(_) => self.id(),
+			_ => { self.error(String::from("Expected a number or parenthesis")); 0.0 },
+		}
+	}
+
+	fn id(self: &mut Parser) -> f64 {
+		match self.scanner.peek().clone() {
+			Token::Text(s) => {
+				self.scanner.next();
+				match self.scanner.peek().clone() {
+					Token::Equals => {
+						self.expect(Token::Equals, "Expected =");
+						let v = self.expr();
+						self.lexiographic_table.insert(s.clone(), v);
+						match self.result {
+							ParseResult::Error(_) => v,
+							_ => { self.result = ParseResult::Pair(s.clone(), v); v }
+						}
+					},
+					_ => {
+						match self.lexiographic_table.get(&s) {
+							Option::Some(v) => return *v,
+							Option::None => {},
+						};
+						self.error("Unknown variable or constant");
+						0.0
+					},
+				}
+			},
+			_ => { self.error("Expexted a name or identifier"); 0.0 },
 		}
 	}
 	

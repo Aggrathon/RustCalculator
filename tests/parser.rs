@@ -3,12 +3,29 @@ extern crate calc;
 use calc::parser::*;
 
 fn test(string: &str, value: f64) {
-	let v = match *Parser::new(string).parse() {
+	let mut p = Parser::new(string);
+	let v = match p.parse() {
 		ParseResult::Value(v) => v,
 		ParseResult::Pair(_, v) => v,
-		_ => panic!(),
+		ParseResult::Error(s) => panic!(s.clone()),
+		ParseResult::Ended => panic!("Evaluation ended early"),
+		ParseResult::Parsing => panic!("Incomplete evaluation"),
 	};
 	assert!((value-v).abs() < 0.000001, "{}: {} != {}", string, v, value);
+}
+
+fn test2(string: &str, values: &[f64]) {
+	let mut p = Parser::new(string);
+	for v in values {
+		let v2 = match p.parse() {
+			ParseResult::Value(v) => v,
+			ParseResult::Pair(_, v) => v,
+			ParseResult::Error(s) => panic!(s.clone()),
+			ParseResult::Ended => panic!("Evaluation ended early"),
+			ParseResult::Parsing => panic!("Incomplete evaluation"),
+		};
+		assert!((v-v2).abs() < 0.000001, "{}: {} != {}", string, v2, v);
+	}
 }
 
 #[test]
@@ -50,4 +67,15 @@ fn no_mul() {
 	test("2(pi)-2*pi", 0.0);
 	test("e pi-e*pi", 0.0);
 	test("2 -5", -3.0);
+}
+
+#[test]
+fn multiple() {
+	test("x = 5, x*x/5", 5.0);
+	test("5*5/5", 5.0);
+	test2("x = 5, x*x/5", &[5.0, 5.0]);
+	test2("(5 + 5 + 5)/3, sqrt(5*5)", &[5.0, 5.0]);
+	test2("x = 5, x*x/5", &[5.0, 5.0]);
+	test2("x = 5, y = x*x/5", &[5.0, 5.0]);
+	test2("x = 5, y = x*x/5, 5, 5, x*5 / y", &[5.0, 5.0, 5.0, 5.0, 5.0]);
 }

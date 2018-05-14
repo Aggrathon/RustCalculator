@@ -20,6 +20,7 @@ pub enum Token {
 	Comma,
 	Lparen,
 	Rparen,
+	Equals,
 }
 
 impl std::fmt::Display for Token {
@@ -35,9 +36,10 @@ impl std::fmt::Display for Token {
 			Token::END => write!(f, "END"),
 			Token::Unknown => write!(f, "Unknown"),
 			Token::Factorial => write!(f, "Operator: !"),
-			Token::Comma => write!(f, "Marker: ,"),
-			Token::Lparen => write!(f, "Marker: ("),
-			Token::Rparen => write!(f, "Marker: )"),
+			Token::Comma => write!(f, "Symbol: ,"),
+			Token::Lparen => write!(f, "Symbol: ("),
+			Token::Rparen => write!(f, "Symbol: )"),
+			Token::Equals => write!(f, "Symbol: ="),
 			Token::Function(ref s) => write!(f, "Function: {}", s),
 		}
     }
@@ -140,6 +142,7 @@ impl Scanner {
 			')' => Token::Rparen,
 			'[' => Token::Lparen,
 			']' => Token::Rparen,
+			'=' => Token::Equals,
 			'*' => {	// ** == ^
 				let od = match self.iterator.peek() {
 					Option::None => return Token::Multiplication,

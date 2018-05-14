@@ -21,6 +21,7 @@ pub enum Token {
 	Lparen,
 	Rparen,
 	Equals,
+	Bar,
 }
 
 impl std::fmt::Display for Token {
@@ -40,6 +41,7 @@ impl std::fmt::Display for Token {
 			Token::Lparen => write!(f, "Symbol: ("),
 			Token::Rparen => write!(f, "Symbol: )"),
 			Token::Equals => write!(f, "Symbol: ="),
+			Token::Bar => write!(f, "Symbol: |"),
 			Token::Function(ref s) => write!(f, "Function: {}", s),
 		}
     }
@@ -143,6 +145,7 @@ impl Scanner {
 			'[' => Token::Lparen,
 			']' => Token::Rparen,
 			'=' => Token::Equals,
+			'|' => Token::Bar,
 			'*' => {	// ** == ^
 				let od = match self.iterator.peek() {
 					Option::None => return Token::Multiplication,

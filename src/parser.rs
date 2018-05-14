@@ -33,6 +33,7 @@ Func
 	Value
 Value
 	( Expression )
+	| Expression |
 	- Number
 	Number
 	Id
@@ -262,6 +263,12 @@ impl Parser {
 				self.expect(Token::Rparen, "Expected Right Parenthesis");
 				v
 			},
+			Token::Bar => {
+				self.scanner.next();
+				let v = self.expr();
+				self.expect(Token::Bar, "Expected |");
+				v.abs()
+			}
 			Token::Text(_) => self.id(),
 			_ => { self.error(String::from("Expected a number or parenthesis")); 0.0 },
 		}

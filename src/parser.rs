@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expect(self: &mut Self, t2: Token, reason: &str) -> Result<f64, String> {
-        if *self.scanner.next() == t2 {
+        if self.scanner.next() == t2 {
             Result::Ok(0.0)
         } else {
             self.error(reason)
@@ -144,15 +144,16 @@ impl<'a> Parser<'a> {
             Token::Operator(Operator::Factorial) => {
                 self.scanner.next();
                 if v < 0.0 {
-                    self.error("Factorial must be positive");
+                    self.error("Factorial must be positive")
+                } else {
+                    let mut r: f64 = 1.0;
+                    let mut v: f64 = v.floor();
+                    while v > 1.0 {
+                        r *= v;
+                        v -= 1.0;
+                    }
+                    self.factor_(r)
                 }
-                let mut r: f64 = 1.0;
-                let mut v: f64 = v.floor();
-                while v > 1.0 {
-                    r *= v;
-                    v -= 1.0;
-                }
-                self.factor_(r)
             }
             _ => Result::Ok(v),
         }
@@ -231,7 +232,7 @@ impl<'a> Parser<'a> {
         match self.scanner.peek() {
             Token::Number(x) => {
                 self.scanner.next();
-                Result::Ok(*x)
+                Result::Ok(x)
             }
             Token::Operator(Operator::Subtraction) => {
                 self.scanner.next();
@@ -282,7 +283,7 @@ impl std::iter::Iterator for Parser<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.scanner.peek() {
             Token::END => Option::None,
-            _ => Option::Some(self.expr())
+            _ => Option::Some(self.expr()), //TODO: If error, seek until end of expression
         }
     }
 }

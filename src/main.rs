@@ -5,7 +5,7 @@ fn main() {
     if combine == "" {
         print_help();
     } else {
-        calc::calculate_print(combine);
+        calc::calculate_print(&combine);
     }
 }
 

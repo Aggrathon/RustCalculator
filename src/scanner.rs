@@ -1,6 +1,6 @@
 use natural_constants::physics;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum Token<'a> {
     Operator(Operator),
     Number(f64),
@@ -33,7 +33,7 @@ impl std::fmt::Display for Token<'_> {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum Function {
     Log,
     Ln,
@@ -66,7 +66,7 @@ impl std::fmt::Display for Function {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum Operator {
     Addition,
     Subtraction,
@@ -114,7 +114,7 @@ impl<'a> Scanner<'a> {
 
     pub fn print_pos(&self) -> String {
         let i = if self.index_current > 0 {
-            self.index_current - 1
+            self.index_current
         } else {
             0
         };
@@ -124,22 +124,21 @@ impl<'a> Scanner<'a> {
         )
     }
 
-    pub fn next(self: &mut Self) -> &'a Token {
+    pub fn next(self: &mut Self) -> Token<'a> {
         self.index_current = self.index_next;
         self.token_current = self.token_next;
         self.token_next = self.get_next_token();
-        &self.token_current
+        self.token_current
     }
 
     #[allow(dead_code)]
-    pub fn current(&self) -> &'a Token {
-        &self.token_current
+    pub fn current(&self) -> Token<'a> {
+        self.token_current
     }
 
-    pub fn peek(&self) -> &'a Token {
-        &self.token_next
+    pub fn peek(&self) -> Token<'a> {
+        self.token_next
     }
-
 
     fn get_next_token(&mut self) -> Token<'a> {
         let oc = match self.iterator.next() {
@@ -181,7 +180,7 @@ impl<'a> Scanner<'a> {
                             Option::None => break,
                             Option::Some(d) => {
                                 if d.1.is_numeric() || d.1 == '.' || d.1 == 'E' {
-                                    end = oc.0;
+                                    end = d.0;
                                 } else {
                                     break;
                                 }
@@ -199,7 +198,7 @@ impl<'a> Scanner<'a> {
                             Option::None => break,
                             Option::Some(d) => {
                                 if d.1.is_alphanumeric() || d.1 == '_' {
-                                    end = oc.0;
+                                    end = d.0;
                                 } else {
                                     break;
                                 }

@@ -2,13 +2,7 @@ use calc::parser::*;
 
 fn test(string: &str, value: f64) {
     let mut p = Parser::new(string);
-    let v = match p.parse() {
-        ParseResult::Value(v) => v,
-        ParseResult::Pair(_, v) => v,
-        ParseResult::Error(s) => panic!(s.clone()),
-        ParseResult::Ended => panic!("Evaluation ended early"),
-        ParseResult::Parsing => panic!("Incomplete evaluation"),
-    };
+    let v = p.next().unwrap().unwrap();
     assert!(
         (value - v).abs() < 0.000001,
         "{}: {} != {}",
@@ -21,25 +15,18 @@ fn test(string: &str, value: f64) {
 fn test_multiple(string: &str, values: &[f64]) {
     let mut p = Parser::new(string);
     for v in values {
-        let v2 = match p.parse() {
-            ParseResult::Value(v) => v,
-            ParseResult::Pair(_, v) => v,
-            ParseResult::Error(s) => panic!(s.clone()),
-            ParseResult::Ended => panic!("Evaluation ended early"),
-            ParseResult::Parsing => panic!("Incomplete evaluation"),
-        };
+        let v2 = p.next().unwrap().unwrap();
         assert!((v - v2).abs() < 0.000001, "{}: {} != {}", string, v2, v);
     }
 }
 
 fn test_fail(string: &str) {
     let mut p = Parser::new(string);
-    match p.parse() {
-        ParseResult::Value(v) => panic!("Should not return a valid answer ({} != {})", string, v),
-        ParseResult::Pair(_, v) => panic!("Should not return a valid answer ({} != {})", string, v),
-        ParseResult::Error(_) => return,
-        ParseResult::Ended => return,
-        ParseResult::Parsing => return,
+    for res in p.next() {
+        match res {
+            Result::Ok(v) => panic!("Should not return a valid answer ({} != {})", string, v),
+            _ => {}
+        }
     }
 }
 

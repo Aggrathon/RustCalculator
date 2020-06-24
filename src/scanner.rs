@@ -1,45 +1,34 @@
 use natural_constants::physics;
-use std;
 
 #[derive(PartialEq, Debug, Clone)]
-pub enum Token {
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    Power,
-    Factorial,
+pub enum Token<'a> {
+    Operator(Operator),
     Number(f64),
-    END,
     Unknown,
-    Text(String),
+    Text(&'a str),
     Function(Function),
     Comma,
     Lparen,
     Rparen,
     Equals,
     Bar,
+    END,
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            Token::Addition => write!(f, "Operator: +"),
-            Token::Subtraction => write!(f, "Operator: -"),
-            Token::Multiplication => write!(f, "Operator: *"),
-            Token::Division => write!(f, "Operator: /"),
-            Token::Power => write!(f, "Operator: ^"),
             Token::Number(x) => write!(f, "Value: {}", x),
             Token::Text(ref s) => write!(f, "Text: {}", s),
             Token::END => write!(f, "END"),
             Token::Unknown => write!(f, "Unknown"),
-            Token::Factorial => write!(f, "Operator: !"),
             Token::Comma => write!(f, "Symbol: ,"),
             Token::Lparen => write!(f, "Symbol: ("),
             Token::Rparen => write!(f, "Symbol: )"),
             Token::Equals => write!(f, "Symbol: ="),
             Token::Bar => write!(f, "Symbol: |"),
             Token::Function(ref s) => write!(f, "Function: {}", s),
+            Token::Operator(ref s) => write!(f, "Operator: {}", s),
         }
     }
 }
@@ -77,22 +66,43 @@ impl std::fmt::Display for Function {
     }
 }
 
-pub struct Scanner {
-    string: String,
-    iterator: std::iter::Peekable<std::str::Chars<'static>>,
-    index_current: usize,
-    index_next: usize,
-    token_current: Token,
-    token_next: Token,
+#[derive(PartialEq, Debug, Clone)]
+pub enum Operator {
+    Addition,
+    Subtraction,
+    Division,
+    Multiplication,
+    Power,
+    Factorial,
 }
 
-impl Scanner {
-    pub fn new(string: String) -> Scanner {
-        //This unsafe storage of the char iterator requires that the string is never changed
-        let iter = unsafe { std::mem::transmute(string.chars().peekable()) };
+impl std::fmt::Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            Operator::Addition => write!(f, "+"),
+            Operator::Subtraction => write!(f, "-"),
+            Operator::Multiplication => write!(f, "*"),
+            Operator::Division => write!(f, "/"),
+            Operator::Power => write!(f, "^"),
+            Operator::Factorial => write!(f, "!"),
+        }
+    }
+}
+
+pub struct Scanner<'a> {
+    string: &'a str,
+    iterator: std::iter::Peekable<std::str::CharIndices<'a>>,
+    index_current: usize,
+    index_next: usize,
+    token_current: Token<'a>,
+    token_next: Token<'a>,
+}
+
+impl<'a> Scanner<'a> {
+    pub fn new(string: &'a str) -> Scanner<'a> {
         let mut sc = Scanner {
             string: string,
-            iterator: iter,
+            iterator: string.char_indices().peekable(),
             index_current: 0,
             index_next: 0,
             token_current: Token::Unknown,
@@ -114,43 +124,36 @@ impl Scanner {
         )
     }
 
-    pub fn next(&mut self) -> &Token {
+    pub fn next(self: &mut Self) -> &'a Token {
         self.index_current = self.index_next;
-        std::mem::swap(&mut self.token_current, &mut self.token_next);
+        self.token_current = self.token_next;
         self.token_next = self.get_next_token();
         &self.token_current
     }
 
     #[allow(dead_code)]
-    pub fn current(&self) -> &Token {
+    pub fn current(&self) -> &'a Token {
         &self.token_current
     }
 
-    #[allow(dead_code)]
-    pub fn peek(&self) -> &Token {
+    pub fn peek(&self) -> &'a Token {
         &self.token_next
     }
 
-    pub fn has_ended(&self) -> bool {
-        match self.token_current {
-            Token::END => true,
-            _ => false,
-        }
-    }
 
-    fn get_next_token(&mut self) -> Token {
-        self.index_next += 1;
+    fn get_next_token(&mut self) -> Token<'a> {
         let oc = match self.iterator.next() {
             Option::None => return Token::END,
             Option::Some(c) => c,
         };
-        match oc {
-            '+' => Token::Addition,
-            '-' => Token::Subtraction,
-            '/' => Token::Division,
-            '^' => Token::Power,
-            '!' => Token::Factorial,
-            ',' => Token::Comma,
+        self.index_next = oc.0;
+        match oc.1 {
+            '+' => Token::Operator(Operator::Addition),
+            '-' => Token::Operator(Operator::Subtraction),
+            '/' => Token::Operator(Operator::Division),
+            '^' => Token::Operator(Operator::Power),
+            '!' => Token::Operator(Operator::Factorial),
+            ',' | ';' => Token::Comma,
             '(' => Token::Lparen,
             ')' => Token::Rparen,
             '[' => Token::Lparen,
@@ -159,58 +162,52 @@ impl Scanner {
             '|' => Token::Bar,
             '*' => {
                 // ** == ^
-                let od = match self.iterator.peek() {
-                    Option::None => return Token::Multiplication,
-                    Option::Some(d) => d,
-                }
-                .clone();
-                match od {
-                    '*' => {
-                        self.iterator.next();
-                        self.index_next += 1;
-                        Token::Power
-                    }
-                    _ => Token::Multiplication,
+                match self.iterator.peek() {
+                    Option::None => return Token::Operator(Operator::Multiplication),
+                    Option::Some(d) => match d.1 {
+                        '*' => {
+                            self.iterator.next();
+                            Token::Operator(Operator::Power)
+                        }
+                        _ => Token::Operator(Operator::Multiplication),
+                    },
                 }
             }
             _ => {
-                let mut s = String::with_capacity(8);
-                s.push(oc);
-                if oc.is_numeric() || oc == '.' {
+                let mut end = oc.0;
+                if oc.1.is_numeric() || oc.1 == '.' {
                     loop {
                         match self.iterator.peek() {
                             Option::None => break,
                             Option::Some(d) => {
-                                if d.is_numeric() || *d == '.' || *d == 'E' {
-                                    s.push(*d);
+                                if d.1.is_numeric() || d.1 == '.' || d.1 == 'E' {
+                                    end = oc.0;
                                 } else {
                                     break;
                                 }
                             }
                         };
                         self.iterator.next();
-                        self.index_next += 1;
                     }
-                    match s.parse::<f64>() {
+                    match self.string[self.index_next..(end + 1)].parse::<f64>() {
                         Result::Ok(n) => Token::Number(n),
                         _ => Token::Unknown,
                     }
-                } else if oc.is_alphabetic() {
+                } else if oc.1.is_alphabetic() {
                     loop {
                         match self.iterator.peek() {
                             Option::None => break,
                             Option::Some(d) => {
-                                if d.is_alphanumeric() || *d == '_' {
-                                    s.push(*d);
+                                if d.1.is_alphanumeric() || d.1 == '_' {
+                                    end = oc.0;
                                 } else {
                                     break;
                                 }
                             }
                         };
                         self.iterator.next();
-                        self.index_next += 1;
                     }
-                    Scanner::parse_text(s)
+                    Scanner::parse_text(&self.string[self.index_next..(end + 1)])
                 } else {
                     self.get_next_token()
                 }
@@ -218,7 +215,7 @@ impl Scanner {
         }
     }
 
-    fn parse_text(s: String) -> Token {
+    fn parse_text(s: &'a str) -> Token<'a> {
         let l = s.to_lowercase();
         match l.as_ref() {
             //Constants

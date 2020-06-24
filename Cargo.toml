@@ -3,6 +3,9 @@ name = "calc"
 version = "1.2.0"
 authors = ["Aggrathon <antonbjo@gmail.com>"]
 edition = '2018'
+description = "A simple commandline calculator"
+readme = "readme.md"
+repository = "https://github.com/aggrathon/RustCalculator/"
 
 [dependencies]
 natural_constants = "0.1.0"
@@ -10,3 +13,4 @@ rand = "0.7.3"
 
 [profile.release]
 lto = true
+opt-level = 3

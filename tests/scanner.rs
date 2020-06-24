@@ -3,7 +3,7 @@ use calc::scanner::*;
 #[test]
 fn multiplication() {
     let mut sc = Scanner::new(String::from(" * "));
-    assert_eq!(*sc.next(), Token::Multiplication);
+    assert_eq!(*sc.next(), Token::Operator(Operator::Multiplication));
     assert_eq!(*sc.next(), Token::END);
 }
 
@@ -73,7 +73,7 @@ fn mix() {
     assert!(close(unwrap(sc.next()), std::f64::consts::PI));
     assert_eq!(*sc.next(), Token::Lparen);
     assert_eq!(*sc.next(), Token::Text("asd".to_string()));
-    assert_eq!(*sc.next(), Token::Factorial);
+    assert_eq!(*sc.next(), Token::Operator(Operator::Factorial));
     assert_eq!(*sc.next(), Token::END);
 }
 
@@ -87,8 +87,8 @@ fn peek() {
     assert_eq!(*sc.next(), Token::Lparen);
     assert_eq!(*sc.peek(), Token::Text("asd".to_string()));
     assert_eq!(*sc.next(), Token::Text("asd".to_string()));
-    assert_eq!(*sc.peek(), Token::Factorial);
-    assert_eq!(*sc.next(), Token::Factorial);
+    assert_eq!(*sc.peek(), Token::Operator(Operator::Factorial));
+    assert_eq!(*sc.next(), Token::Operator(Operator::Factorial));
     assert_eq!(*sc.peek(), Token::END);
     assert_eq!(*sc.next(), Token::END);
 }

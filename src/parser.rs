@@ -1,8 +1,6 @@
 use std;
 
-use crate::scanner::Function;
-use crate::scanner::Scanner;
-use crate::scanner::Token;
+use crate::scanner::{Function, Operator, Scanner, Token};
 
 /*
 ___Pattern table___
@@ -41,185 +39,113 @@ Id
     Text = Expr
 */
 
-pub enum ParseResult {
-    Parsing,
-    Value(f64),
-    Pair(String, f64),
-    Error(String),
-    Ended,
+pub struct Parser<'a> {
+    scanner: Scanner<'a>,
+    lexiographic_table: std::collections::HashMap<&'a str, f64>,
 }
 
-pub struct Parser {
-    scanner: Scanner,
-    result: ParseResult,
-    lexiographic_table: std::collections::HashMap<String, f64>,
-}
-
-impl Parser {
-    pub fn new<S: Into<String>>(input: S) -> Parser {
+impl<'a> Parser<'a> {
+    pub fn new(input: &'a str) -> Parser<'a> {
         Parser {
-            scanner: Scanner::new(input.into()),
-            result: ParseResult::Parsing,
+            scanner: Scanner::new(input),
             lexiographic_table: std::collections::HashMap::new(),
         }
     }
 
-    pub fn from(input: Scanner) -> Parser {
+    pub fn from(input: Scanner<'a>) -> Parser<'a> {
         Parser {
             scanner: input,
-            result: ParseResult::Parsing,
             lexiographic_table: std::collections::HashMap::new(),
         }
     }
 
-    pub fn parse(self: &mut Parser) -> &ParseResult {
-        match self.result {
-            ParseResult::Ended | ParseResult::Error(_) => return &self.result,
-            _ => {}
-        };
-        match self.scanner.peek().clone() {
-            Token::END => self.result = ParseResult::Ended,
-            _ => {
-                self.result = ParseResult::Parsing;
-                let v = self.expr();
-                match self.result {
-                    ParseResult::Error(_) | ParseResult::Value(_) | ParseResult::Pair(_, _) => {}
-                    _ => match self.scanner.peek().clone() {
-                        Token::END | Token::Comma => self.result = ParseResult::Value(v),
-                        _ => self.error("Unexpected symbol"),
-                    },
-                };
-            }
-        };
-        &self.result
+    fn error(self: &mut Self, error: &str) -> Result<f64, String> {
+        Result::Err(format!("Error: {}\n{}", error, self.scanner.print_pos()))
     }
 
-    pub fn parse_all(self: &mut Parser) -> &ParseResult {
-        loop {
-            match self.parse() {
-                ParseResult::Ended | ParseResult::Error(_) => break,
-                _ => {}
-            };
-        }
-        &self.result
-    }
-
-    pub fn get_result(self: &Parser) -> &ParseResult {
-        &self.result
-    }
-
-    pub fn get_scanner(self: &Parser) -> &Scanner {
-        &self.scanner
-    }
-
-    fn error<S: Into<String>>(self: &mut Parser, error: S) {
-        match self.result {
-            ParseResult::Error(_) => {}
-            _ => {
-                self.result = ParseResult::Error(format!(
-                    "Error: {}\n{}",
-                    error.into(),
-                    self.scanner.print_pos()
-                ))
-            }
-        }
-    }
-
-    fn expect<S: Into<String>>(self: &mut Parser, t2: Token, reason: S) {
+    fn expect(self: &mut Self, t2: Token, reason: &str) -> Result<f64, String> {
         if *self.scanner.next() == t2 {
+            Result::Ok(0.0)
         } else {
-            self.error(reason);
+            self.error(reason)
         }
     }
 
-    fn expr(self: &mut Parser) -> f64 {
-        match self.scanner.peek().clone() {
-            Token::Text(_) => {
-                let v = self.term();
-                match self.result {
-                    ParseResult::Error(_) => v,
-                    ParseResult::Pair(_, v2) => {
-                        if v == v2 {
-                            v
-                        } else {
-                            self.error("Syntax: id = expression");
-                            v
-                        }
-                    }
-                    _ => self.expr_(v),
-                }
-            }
+    fn expr(self: &mut Self) -> Result<f64, String> {
+        match self.scanner.peek() {
             Token::Comma => {
                 self.scanner.next();
                 self.expr()
             }
             _ => {
-                let v = self.term();
+                let v = self.term()?;
                 self.expr_(v)
             }
         }
     }
 
-    fn expr_(self: &mut Parser, v: f64) -> f64 {
-        match self.scanner.peek().clone() {
-            Token::Addition => {
+    fn expr_(self: &mut Self, v: f64) -> Result<f64, String> {
+        match self.scanner.peek() {
+            Token::Operator(Operator::Addition) => {
                 self.scanner.next();
-                let v = v + self.term();
+                let v = v + self.term()?;
                 self.expr_(v)
             }
-            Token::Subtraction => {
+            Token::Operator(Operator::Subtraction) => {
                 self.scanner.next();
-                let v = v - self.term();
+                let v = v - self.term()?;
                 self.expr_(v)
             }
-            _ => v,
+            _ => Result::Ok(v),
         }
     }
 
-    fn term(self: &mut Parser) -> f64 {
-        let v = self.factor();
+    fn term(self: &mut Self) -> Result<f64, String> {
+        let v = self.factor()?;
         self.term_(v)
     }
 
-    fn term_(self: &mut Parser, v: f64) -> f64 {
-        match self.scanner.peek().clone() {
-            Token::Multiplication => {
+    fn term_(self: &mut Self, v: f64) -> Result<f64, String> {
+        match self.scanner.peek() {
+            Token::Operator(Operator::Multiplication) => {
                 self.scanner.next();
-                let v = v * self.factor();
+                let v = v * self.factor()?;
                 self.term_(v)
             }
-            Token::Division => {
+            Token::Operator(Operator::Division) => {
                 self.scanner.next();
-                let v2 = self.factor();
+                let v2 = self.factor()?;
                 if v2 == 0.0 {
-                    self.error("Division by zero");
-                    0.0
+                    self.error("Division by zero")
                 } else {
                     self.term_(v / v2)
                 }
             }
             Token::Function(_) | Token::Lparen | Token::Number(_) | Token::Text(_) => {
-                let v = v * self.factor();
+                let v = v * self.factor()?;
                 self.term_(v)
             }
-            _ => v,
+            _ => Result::Ok(v),
         }
     }
 
-    fn factor(self: &mut Parser) -> f64 {
-        let v = self.func();
+    fn factor(self: &mut Self) -> Result<f64, String> {
+        let v = self.func()?;
         self.factor_(v)
     }
 
-    fn factor_(self: &mut Parser, v: f64) -> f64 {
-        match self.scanner.peek().clone() {
-            Token::Power => {
+    fn factor_(self: &mut Self, v: f64) -> Result<f64, String> {
+        match self.scanner.peek() {
+            Token::Operator(Operator::Power) => {
                 self.scanner.next();
-                let v = v.powf(self.func());
+                let v = v.powf(self.func()?);
                 self.factor_(v)
             }
-            Token::Factorial => {
+            Token::Operator(Operator::Factorial) => {
                 self.scanner.next();
+                if v < 0.0 {
+                    self.error("Factorial must be positive");
+                }
                 let mut r: f64 = 1.0;
                 let mut v: f64 = v.floor();
                 while v > 1.0 {
@@ -228,68 +154,71 @@ impl Parser {
                 }
                 self.factor_(r)
             }
-            _ => v,
+            _ => Result::Ok(v),
         }
     }
 
-    fn func(self: &mut Parser) -> f64 {
-        match self.scanner.peek().clone() {
+    fn func(self: &mut Self) -> Result<f64, String> {
+        match self.scanner.peek() {
             Token::Function(ref f) => {
                 self.scanner.next();
                 match *f {
                     Function::Log => {
-                        self.expect(Token::Lparen, "Syntax: log(x,y)");
-                        let v1 = self.expr();
-                        self.expect(Token::Comma, "Syntax: log(x,y)");
-                        let v2 = self.expr();
-                        self.expect(Token::Rparen, "Syntax: log(x,y)");
-                        v1.log(v2)
+                        self.expect(Token::Lparen, "Syntax: log(x,y)")?;
+                        let v1 = self.expr()?;
+                        match self.scanner.peek() {
+                            Token::Comma => {
+                                self.scanner.next();
+                                let v2 = self.expr()?;
+                                self.expect(Token::Rparen, "Syntax: log(x,y)")?;
+                                Result::Ok(v1.log(v2))
+                            }
+                            Token::Rparen => {
+                                self.scanner.next();
+                                Result::Ok(v1.ln())
+                            }
+                            _ => self.error("Syntax: log(x,y)"),
+                        }
                     }
                     Function::Atan2 => {
-                        self.expect(Token::Lparen, "Syntax: atan2(y,x)");
-                        let v1 = self.expr();
-                        self.expect(Token::Comma, "Syntax: atan2(y,x)");
-                        let v2 = self.expr();
-                        self.expect(Token::Rparen, "Syntax: atan2(y,x)");
-                        v1.atan2(v2)
+                        self.expect(Token::Lparen, "Syntax: atan2(y,x)")?;
+                        let v1 = self.expr()?;
+                        self.expect(Token::Comma, "Syntax: atan2(y,x)")?;
+                        let v2 = self.expr()?;
+                        self.expect(Token::Rparen, "Syntax: atan2(y,x)")?;
+                        Result::Ok(v1.atan2(v2))
                     }
                     _ => {
-                        let v = self.func();
+                        let v = self.func()?;
                         match *f {
-                            Function::Ln => v.ln(),
-                            Function::Abs => v.abs(),
+                            Function::Ln => Result::Ok(v.ln()),
+                            Function::Abs => Result::Ok(v.abs()),
                             Function::Sqrt => {
                                 if v < 0.0 {
-                                    self.error(format!("Cannot handle negative values ({})", v));
-                                    v
+                                    self.error(&format!("Cannot handle negative values ({})", v))
                                 } else {
-                                    v.sqrt()
+                                    Result::Ok(v.sqrt())
                                 }
                             }
-                            Function::Cos => v.cos(),
-                            Function::Sin => v.sin(),
-                            Function::Tan => v.tan(),
+                            Function::Cos => Result::Ok(v.cos()),
+                            Function::Sin => Result::Ok(v.sin()),
+                            Function::Tan => Result::Ok(v.tan()),
                             Function::Asin => {
                                 if v <= 1.0 && v >= -1.0 {
-                                    v.asin()
+                                    Result::Ok(v.asin())
                                 } else {
-                                    self.error(format!("Value outside range (-1 <= {} <= 1)", v));
-                                    v
+                                    self.error(&format!("Value outside range (-1 <= {} <= 1)", v))
                                 }
                             }
                             Function::Acos => {
                                 if v <= 1.0 && v >= -1.0 {
-                                    v.acos()
+                                    Result::Ok(v.acos())
                                 } else {
-                                    self.error(format!("Value outside range (-1 <= {} <= 1)", v));
-                                    v
+                                    self.error(&format!("Value outside range (-1 <= {} <= 1)", v))
                                 }
                             }
-                            Function::Atan => v.atan(),
-                            _ => {
-                                self.error(String::from("Unknown function"));
-                                v
-                            }
+                            Function::Atan => Result::Ok(v.atan()),
+                            _ => self.error("Unknown function"),
                         }
                     }
                 }
@@ -298,67 +227,62 @@ impl Parser {
         }
     }
 
-    fn value(self: &mut Parser) -> f64 {
-        match self.scanner.peek().clone() {
+    fn value(self: &mut Self) -> Result<f64, String> {
+        match self.scanner.peek() {
             Token::Number(x) => {
                 self.scanner.next();
-                x
+                Result::Ok(*x)
             }
-            Token::Subtraction => {
+            Token::Operator(Operator::Subtraction) => {
                 self.scanner.next();
-                -self.value()
+                Result::Ok(-self.value()?)
             }
             Token::Lparen => {
                 self.scanner.next();
-                let v = self.expr();
-                self.expect(Token::Rparen, "Expected Right Parenthesis");
-                v
+                let v = self.expr()?;
+                self.expect(Token::Rparen, "Expected Right Parenthesis")?;
+                Result::Ok(v)
             }
             Token::Bar => {
                 self.scanner.next();
-                let v = self.expr();
-                self.expect(Token::Bar, "Expected |");
-                v.abs()
+                let v = self.expr()?;
+                self.expect(Token::Bar, "Expected |")?;
+                Result::Ok(v.abs())
             }
             Token::Text(_) => self.id(),
-            _ => {
-                self.error(String::from("Expected a number or parenthesis"));
-                0.0
-            }
+            _ => self.error("Expected a number or parenthesis"),
         }
     }
 
-    fn id(self: &mut Parser) -> f64 {
-        match self.scanner.peek().clone() {
+    fn id(self: &mut Self) -> Result<f64, String> {
+        match self.scanner.peek() {
             Token::Text(s) => {
                 self.scanner.next();
-                match self.scanner.peek().clone() {
+                match self.scanner.peek() {
                     Token::Equals => {
-                        self.expect(Token::Equals, "Expected =");
-                        let v = self.expr();
-                        self.lexiographic_table.insert(s.clone(), v);
-                        match self.result {
-                            ParseResult::Error(_) => v,
-                            _ => {
-                                self.result = ParseResult::Pair(s.clone(), v);
-                                v
-                            }
-                        }
+                        self.scanner.next();
+                        let v = self.expr()?;
+                        self.lexiographic_table.insert(s, v);
+                        Result::Ok(v)
                     }
-                    _ => {
-                        match self.lexiographic_table.get(&s) {
-                            Option::Some(v) => return *v,
-                            Option::None => {}
-                        };
-                        self.error("Unknown variable or constant");
-                        0.0
-                    }
+                    _ => match self.lexiographic_table.get(s) {
+                        Option::Some(v) => return Result::Ok(*v),
+                        Option::None => self.error("Unknown variable or constant"),
+                    },
                 }
             }
-            _ => {
-                self.error("Expexted a name or identifier");
-                0.0
-            }
+            _ => self.error("Expexted a name or identifier"),
+        }
+    }
+}
+
+impl std::iter::Iterator for Parser<'_> {
+    type Item = Result<f64, String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.scanner.peek() {
+            Token::END => Option::None,
+            _ => Option::Some(self.expr())
         }
     }
 }

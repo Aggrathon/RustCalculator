@@ -189,6 +189,47 @@ impl<'a> Parser<'a> {
                         self.expect(Token::Rparen, "Syntax: atan2(y,x)")?;
                         Result::Ok(v1.atan2(v2))
                     }
+                    Function::Sum => {
+                        let mut v: f64 = 0.0;
+                        self.expect(Token::Lparen, "Syntax: sum(x,y,...)")?;
+                        loop {
+                            v += self.expr()?;
+                            if self.scanner.peek() == Token::Rparen {
+                                self.expect(Token::Rparen, "Syntax: sum(x,y,...)")?;
+                                break;
+                            }
+                            self.expect(Token::Comma, "Syntax: sum(x,y,...)")?;
+                        }
+                        Result::Ok(v)
+                    }
+                    Function::Mean => {
+                        let mut v: f64 = 0.0;
+                        let mut c: f64 = 0.0;
+                        self.expect(Token::Lparen, "Syntax: sum(x,y,...)")?;
+                        loop {
+                            v += self.expr()?;
+                            c += 1.0;
+                            if self.scanner.peek() == Token::Rparen {
+                                self.expect(Token::Rparen, "Syntax: sum(x,y,...)")?;
+                                break;
+                            }
+                            self.expect(Token::Comma, "Syntax: sum(x,y,...)")?;
+                        }
+                        Result::Ok(v / c)
+                    }
+                    Function::Product => {
+                        let mut v: f64 = 1.0;
+                        self.expect(Token::Lparen, "Syntax: sum(x,y,...)")?;
+                        loop {
+                            v *= self.expr()?;
+                            if self.scanner.peek() == Token::Rparen {
+                                self.expect(Token::Rparen, "Syntax: sum(x,y,...)")?;
+                                break;
+                            }
+                            self.expect(Token::Comma, "Syntax: sum(x,y,...)")?;
+                        }
+                        Result::Ok(v)
+                    }
                     _ => {
                         let v = self.func()?;
                         match *f {

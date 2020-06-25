@@ -46,6 +46,9 @@ pub enum Function {
     Asin,
     Atan,
     Atan2,
+    Sum,
+    Mean,
+    Product,
 }
 
 impl std::fmt::Display for Function {
@@ -62,6 +65,9 @@ impl std::fmt::Display for Function {
             Function::Acos => write!(f, "acos"),
             Function::Atan => write!(f, "atan"),
             Function::Atan2 => write!(f, "atan2"),
+            Function::Sum => write!(f, "sum"),
+            Function::Mean => write!(f, "mean"),
+            Function::Product => write!(f, "product"),
         }
     }
 }
@@ -235,14 +241,13 @@ impl<'a> Scanner<'a> {
             "tan" => Token::Function(Function::Tan),
             "abs" => Token::Function(Function::Abs),
             "sqrt" => Token::Function(Function::Sqrt),
-            "asin" => Token::Function(Function::Asin),
-            "acos" => Token::Function(Function::Acos),
-            "atan" => Token::Function(Function::Atan),
-            "atan2" => Token::Function(Function::Atan2),
-            "arcsin" => Token::Function(Function::Asin),
-            "arccos" => Token::Function(Function::Acos),
-            "arctan" => Token::Function(Function::Atan),
-            "arctan2" => Token::Function(Function::Atan2),
+            "asin" | "arcsin" => Token::Function(Function::Asin),
+            "acos" | "arccos" => Token::Function(Function::Acos),
+            "atan" | "arctan" => Token::Function(Function::Atan),
+            "atan2" | "arctan2" => Token::Function(Function::Atan2),
+            "sum" => Token::Function(Function::Sum),
+            "mean" | "avg" | "average" => Token::Function(Function::Mean),
+            "prod" | "product" => Token::Function(Function::Product),
             //Unknown
             _ => Token::Text(s),
         }

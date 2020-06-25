@@ -234,6 +234,7 @@ impl<'a> Parser<'a> {
                         let v = self.func()?;
                         match *f {
                             Function::Ln => Result::Ok(v.ln()),
+                            Function::Exp => Result::Ok(std::f64::consts::E.powf(v)),
                             Function::Abs => Result::Ok(v.abs()),
                             Function::Sqrt => {
                                 if v < 0.0 {

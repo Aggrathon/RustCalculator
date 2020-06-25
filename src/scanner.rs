@@ -49,6 +49,7 @@ pub enum Function {
     Sum,
     Mean,
     Product,
+    Exp,
 }
 
 impl std::fmt::Display for Function {
@@ -68,6 +69,7 @@ impl std::fmt::Display for Function {
             Function::Sum => write!(f, "sum"),
             Function::Mean => write!(f, "mean"),
             Function::Product => write!(f, "product"),
+            Function::Exp => write!(f, "exp"),
         }
     }
 }
@@ -236,6 +238,7 @@ impl<'a> Scanner<'a> {
             //Functions
             "ln" => Token::Function(Function::Ln),
             "log" => Token::Function(Function::Log),
+            "exp" => Token::Function(Function::Exp),
             "sin" => Token::Function(Function::Sin),
             "cos" => Token::Function(Function::Cos),
             "tan" => Token::Function(Function::Tan),

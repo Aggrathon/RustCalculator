@@ -100,3 +100,13 @@ fn multiple() {
         &[5.0, 5.0, 5.0, 5.0, 5.0],
     );
 }
+
+#[test]
+fn aggregate() {
+    test("sum(1,2,3)", 6.0);
+    test("mean(1,2,3)", 2.0);
+    test("prod(1,1,12)", 12.0);
+    test("2*prod(1,1,12)/1.2-5", 15.0);
+    test("sum(exp(log(3)))", 3.0);
+    test("sqrt(mean(exp(log(4))))", 2.0);
+}

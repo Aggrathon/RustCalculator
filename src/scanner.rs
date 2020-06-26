@@ -2,11 +2,16 @@ use natural_constants::physics;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum Token<'a> {
-    Operator(Operator),
     Number(f64),
     Unknown,
     Text(&'a str),
     Function(Function),
+    Addition,
+    Subtraction,
+    Division,
+    Multiplication,
+    Power,
+    Factorial,
     Comma,
     Lparen,
     Rparen,
@@ -28,7 +33,12 @@ impl std::fmt::Display for Token<'_> {
             Token::Equals => write!(f, "Symbol: ="),
             Token::Bar => write!(f, "Symbol: |"),
             Token::Function(ref s) => write!(f, "Function: {}", s),
-            Token::Operator(ref s) => write!(f, "Operator: {}", s),
+            Token::Addition => write!(f, "Operator: +"),
+            Token::Subtraction => write!(f, "Operator: -"),
+            Token::Multiplication => write!(f, "Operator: *"),
+            Token::Division => write!(f, "Operator: /"),
+            Token::Power => write!(f, "Operator: ^"),
+            Token::Factorial => write!(f, "Operator: !"),
         }
     }
 }
@@ -70,29 +80,6 @@ impl std::fmt::Display for Function {
             Function::Mean => write!(f, "mean"),
             Function::Product => write!(f, "product"),
             Function::Exp => write!(f, "exp"),
-        }
-    }
-}
-
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum Operator {
-    Addition,
-    Subtraction,
-    Division,
-    Multiplication,
-    Power,
-    Factorial,
-}
-
-impl std::fmt::Display for Operator {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            Operator::Addition => write!(f, "+"),
-            Operator::Subtraction => write!(f, "-"),
-            Operator::Multiplication => write!(f, "*"),
-            Operator::Division => write!(f, "/"),
-            Operator::Power => write!(f, "^"),
-            Operator::Factorial => write!(f, "!"),
         }
     }
 }
@@ -155,11 +142,11 @@ impl<'a> Scanner<'a> {
         };
         self.index_next = oc.0;
         match oc.1 {
-            '+' => Token::Operator(Operator::Addition),
-            '-' => Token::Operator(Operator::Subtraction),
-            '/' => Token::Operator(Operator::Division),
-            '^' => Token::Operator(Operator::Power),
-            '!' => Token::Operator(Operator::Factorial),
+            '+' => Token::Addition,
+            '-' => Token::Subtraction,
+            '/' => Token::Division,
+            '^' => Token::Power,
+            '!' => Token::Factorial,
             ',' | ';' => Token::Comma,
             '(' => Token::Lparen,
             ')' => Token::Rparen,
@@ -170,13 +157,13 @@ impl<'a> Scanner<'a> {
             '*' => {
                 // ** == ^
                 match self.iterator.peek() {
-                    Option::None => return Token::Operator(Operator::Multiplication),
+                    Option::None => return Token::Multiplication,
                     Option::Some(d) => match d.1 {
                         '*' => {
                             self.iterator.next();
-                            Token::Operator(Operator::Power)
+                            Token::Power
                         }
-                        _ => Token::Operator(Operator::Multiplication),
+                        _ => Token::Multiplication,
                     },
                 }
             }

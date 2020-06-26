@@ -1,6 +1,6 @@
 use std;
 
-use crate::scanner::{Function, Operator, Scanner, Token};
+use crate::scanner::{Function, Scanner, Token};
 
 /*
 ___Pattern table___
@@ -16,7 +16,7 @@ Term
 Term'
     * Factor Term'
     / Factor Term'
-    f/(/n=>Factor Term
+    f/(/n/t Factor Term     // implicit multiplication
     empty
 Factor
     Func Factor'
@@ -26,11 +26,12 @@ Factor'
     empty
 Func
     f1 Func
-    f2 (Expression , Expression)
+    f2 (Expr, Expr)
+    f3 (Expr, ...)          // aggregation
     Value
 Value
-    ( Expression )
-    | Expression |
+    ( Expr )
+    | Expr |
     - Number
     Number
     Id
@@ -86,12 +87,12 @@ impl<'a> Parser<'a> {
 
     fn expr_(self: &mut Self, v: f64) -> Result<f64, String> {
         match self.scanner.peek() {
-            Token::Operator(Operator::Addition) => {
+            Token::Addition => {
                 self.scanner.next();
                 let v = v + self.term()?;
                 self.expr_(v)
             }
-            Token::Operator(Operator::Subtraction) => {
+            Token::Subtraction => {
                 self.scanner.next();
                 let v = v - self.term()?;
                 self.expr_(v)
@@ -107,12 +108,12 @@ impl<'a> Parser<'a> {
 
     fn term_(self: &mut Self, v: f64) -> Result<f64, String> {
         match self.scanner.peek() {
-            Token::Operator(Operator::Multiplication) => {
+            Token::Multiplication => {
                 self.scanner.next();
                 let v = v * self.factor()?;
                 self.term_(v)
             }
-            Token::Operator(Operator::Division) => {
+            Token::Division => {
                 self.scanner.next();
                 let v2 = self.factor()?;
                 if v2 == 0.0 {
@@ -136,12 +137,12 @@ impl<'a> Parser<'a> {
 
     fn factor_(self: &mut Self, v: f64) -> Result<f64, String> {
         match self.scanner.peek() {
-            Token::Operator(Operator::Power) => {
+            Token::Power => {
                 self.scanner.next();
                 let v = v.powf(self.func()?);
                 self.factor_(v)
             }
-            Token::Operator(Operator::Factorial) => {
+            Token::Factorial => {
                 self.scanner.next();
                 if v < 0.0 {
                     self.error("Factorial must be positive")
@@ -276,7 +277,7 @@ impl<'a> Parser<'a> {
                 self.scanner.next();
                 Result::Ok(x)
             }
-            Token::Operator(Operator::Subtraction) => {
+            Token::Subtraction => {
                 self.scanner.next();
                 Result::Ok(-self.value()?)
             }
@@ -325,7 +326,17 @@ impl std::iter::Iterator for Parser<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.scanner.peek() {
             Token::END => Option::None,
-            _ => Option::Some(self.expr()), //TODO: If error, seek until end of expression
+            _ => match self.expr() {
+                Result::Ok(v) => Option::Some(Result::Ok(v)),
+                Result::Err(e) => {
+                    loop {
+                        if let Token::END | Token::Comma = self.scanner.next() {
+                            break;
+                        }
+                    }
+                    Option::Some(Result::Err(e))
+                }
+            }
         }
     }
 }

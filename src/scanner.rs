@@ -8,8 +8,9 @@ pub enum Token<'a> {
     Function(Function),
     Addition,
     Subtraction,
-    Division,
     Multiplication,
+    Division,
+    Modulo,
     Power,
     Factorial,
     Comma,
@@ -37,6 +38,7 @@ impl std::fmt::Display for Token<'_> {
             Token::Subtraction => write!(f, "Operator: -"),
             Token::Multiplication => write!(f, "Operator: *"),
             Token::Division => write!(f, "Operator: /"),
+            Token::Modulo => write!(f, "Operator: %"),
             Token::Power => write!(f, "Operator: ^"),
             Token::Factorial => write!(f, "Operator: !"),
         }
@@ -144,7 +146,8 @@ impl<'a> Scanner<'a> {
         match oc.1 {
             '+' => Token::Addition,
             '-' => Token::Subtraction,
-            '/' => Token::Division,
+            '/' | ':' => Token::Division,
+            '%' => Token::Modulo,
             '^' => Token::Power,
             '!' => Token::Factorial,
             ',' | ';' => Token::Comma,

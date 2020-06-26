@@ -16,6 +16,7 @@ Term
 Term'
     * Factor Term'
     / Factor Term'
+    % Factor Term'
     f/(/n/t Factor Term     // implicit multiplication
     empty
 Factor
@@ -120,6 +121,15 @@ impl<'a> Parser<'a> {
                     self.error("Division by zero")
                 } else {
                     self.term_(v / v2)
+                }
+            }
+            Token::Modulo => {
+                self.scanner.next();
+                let v2 = self.factor()?;
+                if v2 == 0.0 {
+                    self.error("Division by zero")
+                } else {
+                    self.term_(v % v2)
                 }
             }
             Token::Function(_) | Token::Lparen | Token::Number(_) | Token::Text(_) => {

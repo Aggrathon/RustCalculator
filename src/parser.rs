@@ -216,28 +216,28 @@ impl<'a> Parser<'a> {
                     Function::Mean => {
                         let mut v: f64 = 0.0;
                         let mut c: f64 = 0.0;
-                        self.expect(Token::Lparen, "Syntax: sum(x,y,...)")?;
+                        self.expect(Token::Lparen, "Syntax: mean(x,y,...)")?;
                         loop {
                             v += self.expr()?;
                             c += 1.0;
                             if self.scanner.peek() == Token::Rparen {
-                                self.expect(Token::Rparen, "Syntax: sum(x,y,...)")?;
+                                self.expect(Token::Rparen, "Syntax: mean(x,y,...)")?;
                                 break;
                             }
-                            self.expect(Token::Comma, "Syntax: sum(x,y,...)")?;
+                            self.expect(Token::Comma, "Syntax: mean(x,y,...)")?;
                         }
                         Result::Ok(v / c)
                     }
                     Function::Product => {
                         let mut v: f64 = 1.0;
-                        self.expect(Token::Lparen, "Syntax: sum(x,y,...)")?;
+                        self.expect(Token::Lparen, "Syntax: prod(x,y,...)")?;
                         loop {
                             v *= self.expr()?;
                             if self.scanner.peek() == Token::Rparen {
-                                self.expect(Token::Rparen, "Syntax: sum(x,y,...)")?;
+                                self.expect(Token::Rparen, "Syntax: prod(x,y,...)")?;
                                 break;
                             }
-                            self.expect(Token::Comma, "Syntax: sum(x,y,...)")?;
+                            self.expect(Token::Comma, "Syntax: prod(x,y,...)")?;
                         }
                         Result::Ok(v)
                     }
